@@ -23,12 +23,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-os.makedirs("./static", exist_ok=True)
-app.mount("/.static", StaticFiles(directory=".static"), name=".static")
+os.makedirs("/static", exist_ok=True)
+app.mount("/static", StaticFiles(directory="static"), name="static")
 UPLOAD_DIR = "uploads"
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB in bytes
 os.makedirs(UPLOAD_DIR, exist_ok=True)
-os.makedirs(".static", exist_ok=True)
+os.makedirs("static", exist_ok=True)
 
 def cleanup_old_files(directory, days_old=7):
     """Remove files older than specified days"""
@@ -89,7 +89,7 @@ async def upload_file(file: UploadFile = File(...)):
         
         # Cleanup old files periodically
         cleanup_old_files(UPLOAD_DIR, days_old=7)
-        cleanup_old_files(".static", days_old=7)
+        cleanup_old_files("static", days_old=7)
         
         return JSONResponse({
             "status": "success",
@@ -131,10 +131,10 @@ async def process_pdf(filename: str):
         # Generate unique output filename
         uid2 = uuid.uuid4().hex[:7]
         timestamp = datetime.now().strftime("%Y%m%d")
-        process_pdf_path = os.path.join(".static", f"{uid2}_{timestamp}_Process.pdf")
+        process_pdf_path = os.path.join("static", f"{uid2}_{timestamp}_Process.pdf")
         
         # Ensure .static directory exists
-        os.makedirs(".static", exist_ok=True)
+        os.makedirs("static", exist_ok=True)
         
         # Process the PDF with proper error handling
         try:
@@ -166,7 +166,7 @@ async def process_pdf(filename: str):
         
         # Return the URL path for accessing the file (relative to static mount)
         process_filename = os.path.basename(process_pdf_path)
-        process_url = f"/.static/{process_filename}"
+        process_url = f"/static/{process_filename}"
         
         print(f"Successfully processed {filename} -> {process_pdf_path}")
         return JSONResponse({
@@ -189,10 +189,10 @@ async def download_file(filename: str):
         if not filename.endswith('.pdf'):
             raise HTTPException(status_code=400, detail="Only PDF files can be downloaded")
         
-        file_path = os.path.join(".static", filename)
+        file_path = os.path.join("static", filename)
         
         # Prevent directory traversal
-        if not os.path.abspath(file_path).startswith(os.path.abspath(".static")):
+        if not os.path.abspath(file_path).startswith(os.path.abspath("static")):
             raise HTTPException(status_code=403, detail="Access denied")
         
         if not os.path.exists(file_path):
